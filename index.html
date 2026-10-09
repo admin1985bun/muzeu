@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bucătarul scării hărții</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:     #1a1200;
+    --bg2:    #241a00;
+    --bg3:    #2e2200;
+    --card:   #332800;
+    --border: #7a5c00;
+    --gold:   #f5c800;
+    --gold2:  #ffdf60;
+    --orange: #ff8c00;
+    --red:    #e63000;
+    --green:  #22cc44;
+    --cream:  #fff3c0;
+    --muted:  #c8a840;
+    --txt:    #fff8e0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--txt);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 20px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ── */
+  #header {
+    background: var(--bg2);
+    border-bottom: 2px solid var(--gold);
+    padding: 6px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  #header h1 { font-size: 21px; color: var(--gold); white-space: nowrap; }
+
+  #nivel-wrap { display: flex; align-items: center; gap: 8px; font-size: 18px; color: var(--muted); }
+  #nivel-dots { display: flex; gap: 5px; }
+  .nivel-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--gold);
+    background: transparent;
+    transition: background 0.3s;
+  }
+  .nivel-dot.activ { background: var(--gold); }
+
+  /* ── MAIN ── */
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* ── STANGA ── */
+  #stanga {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  /* HARTA */
+  #harta-wrap {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 2px solid var(--border);
+    background: #2a1e00;
+  }
+
+  #harta-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  /* overlay scara curenta */
+  #scara-overlay {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(26,18,0,0.88);
+    border: 2px solid var(--gold);
+    border-radius: 6px;
+    padding: 4px 16px;
+    font-size: 18px;
+    color: var(--gold2);
+    font-weight: bold;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* ZONA INTREBARE */
+  #intrebare-wrap {
+    flex-shrink: 0;
+    background: var(--bg2);
+    padding: 7px 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  #intrebare-text { font-size: 20px; color: var(--cream); line-height: 1.35; }
+  #intrebare-text strong { color: var(--gold); }
+
+  #optiuni-wrap { display: flex; flex-direction: row; gap: 7px; flex-wrap: wrap; }
+
+  .opt-btn {
+    background: var(--card);
+    border: 2px solid var(--border);
+    color: var(--txt);
+    font-size: 20px;
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 5px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.18s, background 0.18s, transform 0.1s;
+    white-space: nowrap;
+  }
+
+  .opt-btn:hover  { border-color: var(--gold); background: #3a2c00; transform: translateY(-2px); }
+  .opt-btn.corect { border-color: var(--green); background: #003a10; color: #80ffaa; cursor: default; }
+  .opt-btn.gresit { border-color: var(--red);   background: #3a0800; color: #ff8060; cursor: default; }
+  .opt-btn:disabled { cursor: default; }
+
+  /* ── PANEL DREAPTA ── */
+  #panel {
+    width: 340px;
+    flex-shrink: 0;
+    background: var(--bg2);
+    border-left: 2px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* BUCATAR */
+  #bucatar-wrap {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg3);
+    overflow: hidden;
+    height: 140px;
+  }
+
+  #bucat-img {
+    height: 140px;
+    width: 100px;
+    object-fit: cover;
+    object-position: center top;
+    flex-shrink: 0;
+  }
+
+  #bucatar-mesaj {
+    flex: 1;
+    font-size: 18px;
+    color: var(--cream);
+    line-height: 1.4;
+    padding: 8px 10px;
+  }
+
+  /* EXPLICATIE */
+  #explicatie-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  #expl-placeholder {
+    font-size: 18px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 20px;
+    line-height: 1.6;
+  }
+
+  #expl-content { display: none; flex-direction: column; gap: 7px; }
+
+  #expl-titlu {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--gold);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+  }
+
+  #expl-text { font-size: 20px; color: var(--cream); line-height: 1.45; }
+
+  /* calcul */
+  #calcul-box {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  #calcul-box.activ { display: flex; }
+  #calcul-box h3 { font-size: 18px; color: var(--gold2); margin-bottom: 2px; }
+
+  .calcul-rand {
+    font-size: 18px;
+    color: var(--cream);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.35;
+  }
+
+  .calcul-rand .label { color: var(--muted); font-size: 17px; min-width: 100px; }
+  .calcul-rand .val   { color: var(--gold2); font-weight: bold; }
+  .calcul-rand .arrow { color: var(--orange); font-size: 18px; }
+
+  /* funny */
+  #funny-box {
+    background: #3a0800;
+    border: 2px solid var(--red);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 18px;
+    color: #ff8060;
+    line-height: 1.45;
+    display: none;
+  }
+  #funny-box.activ { display: block; }
+
+  #feedback-corect {
+    background: #003a10;
+    border: 2px solid var(--green);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 18px;
+    color: #80ffaa;
+    line-height: 1.45;
+    display: none;
+  }
+  #feedback-corect.activ { display: block; }
+
+  /* buton urmator */
+  #btn-urmator {
+    margin: 0 14px 8px 14px;
+    background: #3a2c00;
+    border: 2px solid var(--gold);
+    color: var(--gold);
+    font-size: 20px;
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: none;
+    transition: background 0.2s;
+    text-align: center;
+  }
+  #btn-urmator.activ { display: block; }
+  #btn-urmator:hover { background: #4a3800; }
+
+  /* FOOTER */
+  #footer {
+    background: var(--bg2);
+    border-top: 2px solid var(--gold);
+    padding: 4px 18px;
+    font-size: 18px;
+    color: var(--muted);
+    text-align: center;
+    flex-shrink: 0;
+  }
+  #footer strong { color: var(--gold); }
+
+  /* FINAL */
+  #final-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,18,0,0.97);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 14px;
+    text-align: center;
+    padding: 24px;
+  }
+  #final-overlay.activ { display: flex; }
+  #final-overlay h2 { font-size: 28px; color: var(--gold); }
+  #final-overlay p  { font-size: 20px; color: var(--cream); max-width: 520px; line-height: 1.55; }
+
+  #final-scara {
+    background: var(--card);
+    border: 2px solid var(--gold);
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 20px;
+    color: var(--gold2);
+    max-width: 520px;
+    line-height: 1.65;
+    text-align: left;
+  }
+
+  #btn-restart {
+    background: #3a2c00;
+    border: 2px solid var(--gold);
+    color: var(--gold);
+    font-size: 20px;
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 9px 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  #btn-restart:hover { background: #4a3800; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>🍕 Livratorul cu drona</h1>
+  <div id="nivel-wrap">
+    <span>Nivelul:</span>
+    <div id="nivel-dots">
+      <div class="nivel-dot" id="dot-0"></div>
+      <div class="nivel-dot" id="dot-1"></div>
+      <div class="nivel-dot" id="dot-2"></div>
+      <div class="nivel-dot" id="dot-3"></div>
+    </div>
+    <span id="nivel-nr">1 / 4</span>
+  </div>
+</div>
+
+<div id="main">
+
+  <!-- STANGA -->
+  <div id="stanga">
+    <div id="harta-wrap">
+      <img id="harta-img" src="harta.jpg" alt="Harta Cornești-Merișor">
+      <div id="scara-overlay">📐 Scară: <span id="scara-curent"></span> &nbsp;|&nbsp; Distanță pe hartă: <span id="dist-curent"></span></div>
+
+    </div>
+
+    <div id="intrebare-wrap">
+      <div id="intrebare-text"></div>
+      <div id="optiuni-wrap"></div>
+    </div>
+  </div>
+
+  <!-- PANEL DREAPTA -->
+  <div id="panel">
+
+    <div id="bucatar-wrap">
+      <img id="bucat-img" src="bucat.jpg" alt="Bucătar">
+      <div id="bucatar-mesaj">🚁 Salut! Trimit pizza cu drona în linie dreaptă. Ajută-mă să calculez distanța reală după scara hărții!</div>
+    </div>
+
+    <div id="explicatie-wrap">
+      <div id="expl-placeholder">👆 Alege distanța corectă pentru a vedea calculul pas cu pas.</div>
+      <div id="expl-content">
+        <div id="expl-titlu"></div>
+        <div id="expl-text"></div>
+        <div id="calcul-box">
+          <h3>🧮 Calcul pas cu pas:</h3>
+          <div id="calcul-pasi"></div>
+        </div>
+        <div id="funny-box"></div>
+        <div id="feedback-corect"></div>
+      </div>
+    </div>
+
+    <button id="btn-urmator">Următorul nivel →</button>
+  </div>
+</div>
+
+<div id="footer">
+  <strong>Formula:</strong> Distanța reală = distanța pe hartă (cm) × numitorul scării ÷ 10⁵ → km
+</div>
+
+<div id="final-overlay">
+  <h2>🚁 Pizza livrată cu succes la toate cele 4 scări!</h2>
+  <p>Drona a zburat corect de fiecare dată! Acum știi să transformi orice distanță de pe hartă în distanță reală.</p>
+  <div id="final-scara">
+    🗺️ <strong>Scară mică</strong> (1:1 000 000) → zonă mare, detalii puține<br>
+    📐 <strong>Scară mare</strong> (1:50 000) → zonă mică, detalii multe<br>
+    🚁 <strong>Drona zboară drept</strong> = distanță aeriană, nu pe șosea<br>
+    🧮 <strong>Formula:</strong> d.hartă (cm) × numitor ÷ 10⁵ = km
+  </div>
+  <button id="btn-restart">↺ Livrare nouă!</button>
+</div>
+
+<script>
+const NIVELURI = [
+  {
+    scara_text: '1 : 1 000 000',
+    scara_val: 1000000,
+    dist_cm: 4.3,
+    dist_label: '4,3 cm',
+    dist_reala: 43,
+    expl: 'Scara 1:1 000 000 — scară mică: 1 cm pe hartă = 10 km în realitate. Drona zboară în linie dreaptă: 4,3 cm × 10 = 43 km.',
+    calcul: [
+      { label: 'Pe hartă',  val: '4,3 cm',       arrow: '×' },
+      { label: 'Numitor',   val: '10⁶',           arrow: '=' },
+      { label: 'Rezultat',  val: '4 300 000 cm',  arrow: '÷ 10⁵' },
+      { label: 'Distanță',  val: '43 km',         arrow: '✓' },
+    ],
+    raspunsuri: [
+      { val: 43,   label: '43 km',    corect: true },
+      { val: 430,  label: '430 km',   corect: false,
+        funny: '🌍 430 km! Drona a zburat peste trei granițe. A aterizat în Viena și a cerut un espresso.' },
+      { val: 4300, label: '4 300 km', corect: false,
+        funny: '🛸 4 300 km! Drona a traversat continentul. A aterizat în Maroc. Localnicii credeau că e OZN.' },
+      { val: 4.3,  label: '4,3 km',   corect: false,
+        funny: '🤏 Doar 4,3 km! Drona a aterizat în curtea vecină. Bucătarul și-a mâncat singur pizza, dezamăgit.' },
+    ],
+  },
+  {
+    scara_text: '1 : 500 000',
+    scara_val: 500000,
+    dist_cm: 3.6,
+    dist_label: '3,6 cm',
+    dist_reala: 18,
+    expl: 'Scara 1:500 000 — 1 cm = 5 km în realitate. Drona zboară drept, ignoră drumurile: 3,6 cm × 5 = 18 km.',
+    calcul: [
+      { label: 'Pe hartă',  val: '3,6 cm',      arrow: '×' },
+      { label: 'Numitor',   val: '5×10⁵',        arrow: '=' },
+      { label: 'Rezultat',  val: '1 800 000 cm', arrow: '÷ 10⁵' },
+      { label: 'Distanță',  val: '18 km',        arrow: '✓' },
+    ],
+    raspunsuri: [
+      { val: 18,   label: '18 km',   corect: true },
+      { val: 180,  label: '180 km',  corect: false,
+        funny: '🏔️ 180 km! Drona a traversat Carpații de 3 ori. S-a întors cu brânză de oaie în loc de pizza.' },
+      { val: 1800, label: '1 800 km',corect: false,
+        funny: '✈️ 1 800 km! Pizza a depășit spațiul aerian al României. Drona a fost interceptată de NATO.' },
+      { val: 3.6,  label: '3,6 km',  corect: false,
+        funny: '🐌 3,6 km! Drona s-a oprit în câmpul dintre sate. Un cioban a mâncat pizza și a zis că e bună.' },
+    ],
+  },
+  {
+    scara_text: '1 : 200 000',
+    scara_val: 200000,
+    dist_cm: 5.5,
+    dist_label: '5,5 cm',
+    dist_reala: 11,
+    expl: 'Scara 1:200 000 — 1 cm = 2 km. Avantajul dronei: zboară drept peste râu și dealuri! 5,5 cm × 2 = 11 km.',
+    calcul: [
+      { label: 'Pe hartă',  val: '5,5 cm',      arrow: '×' },
+      { label: 'Numitor',   val: '2×10⁵',        arrow: '=' },
+      { label: 'Rezultat',  val: '1 100 000 cm', arrow: '÷ 10⁵' },
+      { label: 'Distanță',  val: '11 km',        arrow: '✓' },
+    ],
+    raspunsuri: [
+      { val: 11,  label: '11 km',   corect: true },
+      { val: 110, label: '110 km',  corect: false,
+        funny: '🌙 110 km noaptea! Drona a zburat 4 ore. A sosit la 3:00 AM. Clientul dormea, pizza s-a răcit pe prag.' },
+      { val: 55,  label: '55 km',   corect: false,
+        funny: '⛽ 55 km? Bateria dronei s-a descărcat la jumătate. Pizza a aterizat de urgență într-un lan de porumb.' },
+      { val: 1.1, label: '1,1 km',  corect: false,
+        funny: '👟 1,1 km! Cornești și Merișor sunt practic același sat. Drona s-a întors fără să fi decolat bine.' },
+    ],
+  },
+  {
+    scara_text: '1 : 50 000',
+    scara_val: 50000,
+    dist_cm: 6.8,
+    dist_label: '6,8 cm',
+    dist_reala: 3.4,
+    expl: 'Scară mare 1:50 000 — detalii multe, zonă mică. 1 cm = 0,5 km. Distanță aeriană: 6,8 cm × 0,5 = 3,4 km. Drona ajunge în 4 minute!',
+    calcul: [
+      { label: 'Pe hartă',  val: '6,8 cm',     arrow: '×' },
+      { label: 'Numitor',   val: '5×10⁴',       arrow: '=' },
+      { label: 'Rezultat',  val: '340 000 cm',  arrow: '÷ 10⁵' },
+      { label: 'Distanță',  val: '3,4 km',      arrow: '✓' },
+    ],
+    raspunsuri: [
+      { val: 3.4, label: '3,4 km',  corect: true },
+      { val: 34,  label: '34 km',   corect: false,
+        funny: '🚲 34 km! Drona a traversat județul. Când a ajuns, clientul comandase deja altă pizza.' },
+      { val: 340, label: '340 km',  corect: false,
+        funny: '🛸 340 km! Drona a depășit granița. Controlul vamal a reținut pizza pentru analiză.' },
+      { val: 0.34,label: '0,34 km', corect: false,
+        funny: '🏠 0,34 km — 340 metri! Merișor e după colț. Bucătarul putea arunca pizza pe fereastră.' },
+    ],
+  },
+];
+
+let nivel = 0;
+
+function incarcaNivel() {
+  const n = NIVELURI[nivel];
+
+  // dots
+  for (let i = 0; i < 4; i++)
+    document.getElementById('dot-' + i).classList.toggle('activ', i <= nivel);
+  document.getElementById('nivel-nr').textContent = (nivel + 1) + ' / 4';
+
+  // overlay scara
+  document.getElementById('scara-curent').textContent = n.scara_text;
+  document.getElementById('dist-curent').textContent  = n.dist_label;
+
+  // intrebare
+  document.getElementById('intrebare-text').innerHTML =
+    `🚁 Drona zboară în linie dreaptă de la <strong>Cornești</strong> la <strong>Merișor</strong>. ` +
+    `Scara hărții: <strong>${n.scara_text}</strong>. ` +
+    `Distanța măsurată pe hartă: <strong>${n.dist_label}</strong>. ` +
+    `Care este distanța reală aeriană?`;
+
+  // optiuni amestecate
+  const opt = [...n.raspunsuri].sort(() => Math.random() - 0.5);
+  const wrap = document.getElementById('optiuni-wrap');
+  wrap.innerHTML = '';
+  opt.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.textContent = r.label;
+    btn.addEventListener('click', () => alegRaspuns(r, btn, wrap));
+    wrap.appendChild(btn);
+  });
+
+  // reset panel
+  document.getElementById('expl-placeholder').style.display = 'block';
+  document.getElementById('expl-content').style.display    = 'none';
+  document.getElementById('funny-box').classList.remove('activ');
+  document.getElementById('feedback-corect').classList.remove('activ');
+  document.getElementById('calcul-box').classList.remove('activ');
+  document.getElementById('btn-urmator').classList.remove('activ');
+  document.getElementById('bucatar-mesaj').textContent =
+    `🚁 Scara este ${n.scara_text}. Pe hartă am măsurat ${n.dist_label}. Cât zboară drona?`;
+}
+
+function alegRaspuns(r, btnAles, wrap) {
+  wrap.querySelectorAll('.opt-btn').forEach(b => {
+    b.disabled = true;
+    const found = NIVELURI[nivel].raspunsuri.find(x => x.label === b.textContent);
+    if (found && found.corect) b.classList.add('corect');
+    else if (b === btnAles && !r.corect) b.classList.add('gresit');
+  });
+
+  document.getElementById('expl-placeholder').style.display = 'none';
+  document.getElementById('expl-content').style.display     = 'flex';
+
+  const n = NIVELURI[nivel];
+
+  if (r.corect) {
+    document.getElementById('expl-titlu').textContent = '✅ Corect! ' + r.label;
+    document.getElementById('expl-text').textContent  = n.expl;
+
+    const pasiDiv = document.getElementById('calcul-pasi');
+    pasiDiv.innerHTML = '';
+    n.calcul.forEach(p => {
+      const d = document.createElement('div');
+      d.className = 'calcul-rand';
+      d.innerHTML = `<span class="label">${p.label}:</span><span class="val">${p.val}</span><span class="arrow">${p.arrow}</span>`;
+      pasiDiv.appendChild(d);
+    });
+    document.getElementById('calcul-box').classList.add('activ');
+    document.getElementById('feedback-corect').classList.add('activ');
+    document.getElementById('feedback-corect').textContent =
+      '🚁 PERFECT! Drona decolează acum. Pizza va ajunge caldă în ' + n.dist_reala + ' km!';
+
+    document.getElementById('bucatar-mesaj').textContent =
+      '😄 Bravo! ' + n.dist_reala + ' km în linie dreaptă — drona pleacă!';
+
+    // animeaza drona Cornesti → Merisor
+
+  } else {
+    document.getElementById('expl-titlu').textContent = '❌ ' + r.label + ' — incorect! Răspuns corect: ' + n.dist_reala + ' km';
+    document.getElementById('expl-text').textContent  = n.expl;
+
+    // calcul corect vizibil si la eroare
+    const pasiDiv = document.getElementById('calcul-pasi');
+    pasiDiv.innerHTML = '';
+    n.calcul.forEach(p => {
+      const d = document.createElement('div');
+      d.className = 'calcul-rand';
+      d.innerHTML = `<span class="label">${p.label}:</span><span class="val">${p.val}</span><span class="arrow">${p.arrow}</span>`;
+      pasiDiv.appendChild(d);
+    });
+    document.getElementById('calcul-box').classList.add('activ');
+    document.getElementById('funny-box').classList.add('activ');
+    document.getElementById('funny-box').textContent = r.funny;
+    document.getElementById('bucatar-mesaj').textContent =
+      '😱 Dezastru! Drona a plecat spre ' + r.label + '... Corect era ' + n.dist_reala + ' km.';
+  }
+
+  const btnUrm = document.getElementById('btn-urmator');
+  btnUrm.classList.add('activ');
+  btnUrm.textContent = nivel < 3 ? 'Următorul nivel →' : '🏆 Vezi concluzia!';
+}
+
+
+document.getElementById('btn-urmator').addEventListener('click', () => {
+  nivel++;
+  if (nivel > 3) {
+    document.getElementById('final-overlay').classList.add('activ');
+  } else {
+    incarcaNivel();
+  }
+});
+
+document.getElementById('btn-restart').addEventListener('click', () => {
+  nivel = 0;
+  document.getElementById('final-overlay').classList.remove('activ');
+  incarcaNivel();
+});
+
+window.addEventListener('resize', () => {
+  // reaplica pozitia dronei la resize
+});
+
+incarcaNivel();
+</script>
+</body>
+</html>
